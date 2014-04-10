@@ -1,0 +1,255 @@
+
+We developed a compiler that compiles programs to byte-code and a multi-threaded
+virtual machine (VM) using the Pthreads library that runs the byte-code.
+If we execute programs with $P$ threads, our implementation will partitions the application
+graph of $N$ nodes into $P$ subgraphs and then each thread will work on their own subgraph.
+
+The goal of our system is to keep the threads as busy as possible and to reduce inter-thread communication.
+The load balancing aspect of the system is performed by our work scheduler that is based on a work
+stealing algorithm. More specifically, threads can steal nodes of other threads to keep themselves busy.
+Reduction of inter-thread communication is achieved by first ordering the node addresses present
+in the code in such a way that closer nodes are clustered together and then partitioning them
+to threads.
+
+During compilation, we take note of predicates that are used in rules for
+communication rules (arguments with type \emph{node}) and then build a graph of nodes from
+the program's axioms. The nodes of the graph are then ordered by using a breadth-first search
+algorithm that changes the nodes of addresses to the domain $[0, n[$, where $n$ is the number of
+nodes. Once the VM starts, we simply partition the range
+$[0, n[$ in order to partition the graph.
+
+\subsection{Multicore}
+
+When the VM starts, it reads the byte-code file and starts all threads.
+As a first step, all threads will grab their nodes and assign the \texttt{owner} property of each node.
+Because only one thread is allowed to do computation on a node at any giving time, the owner property
+defines the thread with such permission.
+Next, each thread fills up its \emph{work queue} with the initial nodes. This queue
+maintains the nodes that have new facts to be processed.
+
+\begin{figure}[h!]
+\footnotesize\begin{Verbatim}
+void work_loop(thread_id tid) {
+   while (true) {
+      if(has_work(tid)) {
+         current_node = pop_work(tid); // take node from one of the queues
+      } else {
+         // need to steal a node
+         for (i = 0; i < NUM_THREADS; ++i) {
+            if (current_node = steal_node_from_thread(target_thread)
+               break;
+            target_thread = (target_thread + 1) % NUM_THREADS;
+         }
+      }
+      if(current_node == NULL) {
+         become_idle(tid);
+         if(!synchronize_termination(tid))
+            return;
+         become_active(tid);
+      } else {
+         process_node(current_node, tid);
+      }
+   }
+}
+\end{Verbatim}
+  \caption{Thread work loop.}
+  \label{code:work_loop}
+\end{figure}
+
+When a node sends a fact to another node, we need to check if the target node is in the same work queue of the owner thread.
+When the two nodes are in different threads, then we have a point of synchronization. Eventually,
+there will be no more work to do and the threads will go idle. There is a global atomic counter, a global
+boolean flag and one boolean flag (active/idle) for each thread that are used to detect termination.
+Once a thread goes idle, it decrements the global counter and changes its flag to idle. If the counter
+reaches zero, the global flag is set to idle. Since every thread will be busy-waiting and checking
+the global flag, they will detect the change and exit the program.
+
+Node stealing occurs whenever a thread is about to become idle. In this case, the thread will try to find a
+thread with at least one extra active node. Starting from a random thread, it cycles through all the threads
+and steals the node from the first thread with nodes. Currently, each thread only takes one node per steal.
+
+\subsection{Byte-Code}
+
+A byte-code file contains meta-data about the program's predicates, initial nodes, partitioning
+information, and code for each rule. Rule code uses a custom-made set of instructions that
+use the database to match the body of the rule and then derive the head. Note that a rule
+is only executed if there is a good change that it will successfully match (more details
+in Section~\ref{rule_engine}).
+
+Each VM thread has 32 registers that are used during rule execution.
+Registers can store facts, integers, floats, node addresses and pointers to runtime 
+data structures (lists and structures). When registers store facts, we can reference
+fields in the fact through the register.
+
+Given a rule \texttt{!a(X,Y), b(X,Z), c(X,Y) -o d(Y)} and a database with facts
+\texttt{!a(1,2), !a(2,3), b(1,3), b(5,3), c(1,2), c(1,3), c(5,3)} rule execution proceeds
+in a series of recursive loops: the first loop retrieves an iterator for the persistent facts
+of the predicate \texttt{!a/2} and moves the first valid fact, \texttt{!a(1,2)},
+to register 0; the inner loop retrieves linear facts that match \texttt{b(1,Z)} (from the
+\emph{join constraint}) and moves \texttt{b(1,3)} to register 1; finally, in the final inner
+loop we move \texttt{c(1,2)} to register 2 and the body of the rule is successfully matched. Next, we
+derive \texttt{d(2)}, where \texttt{2} comes from register 0.
+In Fig.~\ref{fig:byte_code} we show the concrete byte-code for the example rule.
+
+\begin{figure}[h]
+\begin{Verbatim}
+PERSISTENT ITERATE OVER a MATCHING TO reg 0
+  LINEAR ITERATE OVER b MATCHING TO reg 1
+      (match).0=0.0
+    LINEAR ITERATE OVER c MATCHING TO reg 2
+        (match).0=0.0
+        (match).1=0.1
+      ALLOC d TO reg 3
+      MVFIELDFIELD 0.1 TO 3.0
+      ADDLINEAR reg 3
+      REMOVE reg 2
+      REMOVE reg 1
+      RETURN DERIVED
+    NEXT
+  NEXT
+RETURN
+\end{Verbatim}
+\caption{Concrete byte-code of rule \texttt{!a(X,Y), b(X,Z), c(X,Y) -o d(Y).}}
+\label{fig:byte_code}
+\end{figure}
+
+In case of failure to find a valid fact at any given loop, we jump
+to the outer loop in order to try the next candidate.
+
+Finally, whenever a rule match succeeds and the head is derived, we progressively backtrack to the outer most valid loop:
+if any inner loop uses linear facts we remove the fact from the database, but we will
+continue backtracking until we reach the first loop that uses linear facts,
+because all the others are now invalid (invalid candidates). In our example, we would jump to the
+loop of \texttt{b(X,Z)} and not \texttt{c(X,Y)}, since \texttt{b(1,3)} was already consumed.
+
+The compiler re-orders the fact expressions used in the body in order to make execution more
+efficient. For example, it forces the join constraints in rules to appear at the beginning so
+that matching will fail sooner rather than later. It also does the same for constraints.
+Note that for every loop, the compiler adds a \emph{match object}, which contains information
+about which arguments need to match, so that runtime matching is efficient.
+
+\subsection{Database Data Structures}
+
+We said before that LM rules are constrained by the first argument. Because nodes can execute
+independently, our database is indexed by the node address and each sub-database does not
+need to deal with synchronization issues since at any given point, only one thread will be using
+the database. Note that the first argument of each fact is not stored.
+
+Each (sub-)database is implemented using three data structures: trie data structures, list data structures and hash table data structures.
+The database must be implemented efficiently because during matching of rules we need
+to restrict the facts using a given match object, which fixes arguments of the target predicate to instantiated values. The data structures used are as follows:
+
+\begin{description}
+   \item[Trie Data Structures]
+
+   Tries are used exclusively to store persistent facts.
+   Tries are trees where facts are indexed by the common arguments. When a trie level has too many nodes, we
+   transform the linked list into a hash table in order to improve lookup.
+      
+   \item[List Data Structures]
+   
+   We use doubly linked lists to store linear facts. Each fact contains the standard \texttt{prev} and \texttt{next} pointers
+   and also the fact arguments. We use a double linked list because it is very efficient to add and remove facts.
+   
+   \item[Hash Table Data Structures]
+   
+   When a double linked list is too long and we need to search for facts by a fixed argument, it becomes very slow to go through the
+   linked list and find the valid facts. To fix this, the virtual machine decides which arguments are best to be indexed
+   (see Section~\ref{indexing}) and then
+   uses an hash table indexed by the appropriate argument. If we need to look for such argument then we just lookup in the hash table. However,
+   if we need to go through all the facts, we just iterate through all the facts in the table. For collisions, we use the above doubly linked list data structure.
+\end{description}
+
+In Fig.~\ref{fig:hash_table} we show an example hash table data structure storing predicate \texttt{a(int,int)}. The table
+has 10 buckets and indexes facts by the second argument. We show the doubly linked list for bucket \texttt{2}. Each linear fact
+contains the regular list pointers, the fact arguments and a \texttt{flags} field. Those are all stored continuously to improve data
+locality. One use of the \texttt{flags} field is to mark that a fact is already being used. For example,
+consider the rule body \texttt{a(A,B), a(C,D) -o ...}. We first pick a fact for \texttt{a(A, B)} from the hash table, then we mark it as
+being used and when we retrieve facts for \texttt{a(C, D)}, we know that one of them cannot be used because it would
+violate linearity.
+
+\begin{figure*}[h]
+   \centering
+   \includegraphics[width=0.75\textwidth]{hash_table.pdf}
+   \caption{Example hash table data structure for storing predicate \texttt{a(int,int)}.}
+   \label{fig:hash_table}
+\end{figure*}
+
+\subsection{Rule Engine}\label{rule_engine}
+
+The rule engine decides which rules need to be executed. The engine decides which rules have
+an high probability of executing successfully while taking into account the priority of rules.
+If a rule with higher priority can execute then it must execute before all the others. 
+
+In Fig.~\ref{fig:rule_engine} we present the 5 main data structures for scheduling rule execution.
+\texttt{Rule Queue} is the bitmap representing the rules that will be run, \texttt{Active Bitmap} contains the rules that have enough
+facts to be fired, \texttt{Inactive Bitmap} contains the rules that must be dropped from \texttt{Rule Queue}, \texttt{Predicates Bitmap}
+marks the newly derived facts and \texttt{Predicates Count} counts the number of facts per predicate.
+To understand how our engine works, consider
+the following small program:
+
+\begin{Verbatim}
+a, e(1) -o b.
+a -o c.
+b -o d.
+e(0) -o f.
+c -o e(1).
+\end{Verbatim}
+
+To apply the rules, we take the least significant rule from the bitmap, which is the candidate rule with the higher priority, and then run it. In our example, we need to execute the second rule \texttt{a -o c}, since we have facts \texttt{a} and \texttt{e(0)}.
+Because the derivation is successful, we derive \texttt{c} and consume \texttt{a}. In Fig.~\ref{fig:rule_engine}~(b) we
+activate the \texttt{c} predicate in the \texttt{Predicates Bitmap} since it was derived and then activate the first and second rules
+in \texttt{Dropped Bitmap} since such rules are no longer applicable (\texttt{a} is gone). To update the \texttt{Rule Queue},
+we remove the bits marked in \texttt{Dropped Bitmap} and add the active rules marked in \texttt{Active Bitmap} that are affected
+by predicates in \texttt{Predicates Map}. The engine has now scheduled the fourth and fifth rules to be run.
+
+\begin{figure*}[h]
+   \centering
+   \begin{subfigure}[b]{0.45\textwidth}
+      \includegraphics[width=\textwidth]{rule_queue1.pdf}
+      \caption{Before applying the second rule.}
+   \end{subfigure}
+   \begin{subfigure}[b]{0.45\textwidth}
+      \includegraphics[width=\textwidth]{rule_queue2.pdf}
+      \caption{After applying the second rule.}
+   \end{subfigure}
+   \caption{Rule engine main data structures.}
+   \label{fig:rule_engine}
+\end{figure*}
+
+Note that every node in the program has the same set of data structures present in Fig.~\ref{fig:rule_engine}.
+We use 32 bits integers to implement bitmaps and an array of 16 bits integers to count facts. This requires
+at least $32$ bytes plus $2 * P$ bytes per predicate.
+
+We do a small optimization to reduce the number of derivations of persistent facts. We
+divide the program rules into two sets: \emph{persistent rules} and \emph{non persistent rules}.
+Persistent rules are rules where only persistent facts are involved. We compile such rules
+incrementally, that is, we attempt to fire all rules where a persistent fact is used. This is called
+the \emph{pipelined semi-naive} evaluation and it originated in the P2 system~\cite{Loo-condie-garofalakis-p2}.
+This evaluation method avoids excessing re-derivations of the same fact. The order of derivation does not matter for those rules, since
+only persistent facts are used.
+
+\subsubsection{Thread Interaction}
+
+Whenever a node derives a new fact through rule derivation, we need to update the data structures of the rule engine.
+This is trivial if done by the thread that owns the node, however, if a thread $T1$ executes a node and a fact is derived
+at a node owned by another thread $T2$, then we may have problems because $T2$ may be also updating the data structures.
+We added a lock and a boolean flag to each node to protect the access to the data structures. When a node starts to execute,
+we activate the flag and lock the node. When another thread tries to use the data structures, if first checks the flag and if
+not activated, it locks the node and performs the required updates. If the flag is activated, it stores the newly created fact
+on a list of incoming facts that is processed before the node is executed. This list is protected by a separate locking mechanism.
+
+\subsection{Indexing}\label{indexing}
+
+\subsection{Runtime Data Structures}
+
+LM supports recursive types such as lists and pairs. These complex data structures are stored in
+the heap of the VM and are managed through reference counting. For instance, each list
+is a \emph{cons cell} with 3 fields: \texttt{tail}, the pointer to the next element of the list;
+\texttt{head}, the element stored by this element of the list; and \texttt{refs} that counts the
+number of pointers to this list element in the VM. The list is deleted from the heap whenever
+\texttt{refs} is decremented to 0.
+
+\subsection{Optimizations}
+
+dynamic indexing
