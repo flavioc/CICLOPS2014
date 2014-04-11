@@ -27,12 +27,19 @@ defines the thread with such permission.
 Next, each thread fills up its \emph{work queue} with the initial nodes. This queue
 maintains the nodes that have new facts to be processed.
 
+The main thread loop is shown in Fig.~\ref{code:work_loop}. For every iteration of the loop, the thread inspects the work queue
+for nodes to process. Procedure \texttt{process\_node} takes a node with new candidate rules and executes the rules until no more
+rules are applicable. If the work queue is empty, then the thread attempts to steal of node from another thread before
+becoming idle. The thread will try to find another
+thread with at least one extra active node. Starting from a random thread, it cycles through all the threads
+and steals from the first thread with nodes. Currently, each thread only takes one node per steal.
+
 \begin{figure}[h!]
-\footnotesize\begin{Verbatim}
+\scriptsize\begin{Verbatim}
 void work_loop(thread_id tid) {
    while (true) {
       if(has_work(tid)) {
-         current_node = pop_work(tid); // take node from one of the queues
+         current_node = pop_work(tid); // take node from the queue
       } else {
          // need to steal a node
          for (i = 0; i < NUM_THREADS; ++i) {
@@ -64,10 +71,6 @@ Once a thread goes idle, it decrements the global counter and changes its flag t
 reaches zero, the global flag is set to idle. Since every thread will be busy-waiting and checking
 the global flag, they will detect the change and exit the program.
 
-Node stealing occurs whenever a thread is about to become idle. In this case, the thread will try to find a
-thread with at least one extra active node. Starting from a random thread, it cycles through all the threads
-and steals the node from the first thread with nodes. Currently, each thread only takes one node per steal.
-
 \subsection{Byte-Code}
 
 A byte-code file contains meta-data about the program's predicates, initial nodes, partitioning
@@ -92,7 +95,7 @@ derive \texttt{d(2)}, where \texttt{2} comes from register 0.
 In Fig.~\ref{fig:byte_code} we show the concrete byte-code for the example rule.
 
 \begin{figure}[h]
-\begin{Verbatim}
+\scriptsize\begin{Verbatim}
 PERSISTENT ITERATE OVER a MATCHING TO reg 0
   LINEAR ITERATE OVER b MATCHING TO reg 1
       (match).0=0.0
@@ -128,7 +131,7 @@ that matching will fail sooner rather than later. It also does the same for cons
 Note that for every loop, the compiler adds a \emph{match object}, which contains information
 about which arguments need to match, so that runtime matching is efficient.
 
-\subsection{Database Data Structures}
+\subsection{Database Data Structures}\label{sec:database}
 
 We said before that LM rules are constrained by the first argument. Because nodes can execute
 independently, our database is indexed by the node address and each sub-database does not
@@ -241,6 +244,72 @@ on a list of incoming facts that is processed before the node is executed. This 
 
 \subsection{Indexing}\label{indexing}
 
+In Section~\ref{rule_engine} we explained that we use hash tables to dynamically index facts.
+The VM employs a fully dynamic mechanism to decide which argument may be optimal to improve fact lookup.
+The algorithm is performed in the initial part of the program execution and empirically tries to assess the argument
+of each predicate that more equally spreads the database across the values of the argument. Note that only one thread
+performs the algorithm, while the others execute as usual.
+
+The indexing algorithm is performed in three main steps. The first step gathers statistics of lookup data by keeping a counter
+of each predicate's argument.
+Every time we perform a search for a predicate where arguments are fixed to a concrete value, we increment the counter of such arguments. This phase is performed during rule execution of $1/25n$ nodes, where $n$ is the number of nodes in the program.
+
+The second step of the algorithm initially decides the candidate arguments of each predicate. If we did not need to lookup
+facts of a predicate using fixed arguments, then such predicates are not indexed and will continue to use doubly linked lists.
+If only one argument was needed during search, then we immediately mark such argument as the indexing argument. Finally, in all
+other cases, we pick the top 2 arguments and we will then gather \emph{entropy statistics} for those two arguments.
+
+Entropy statistics are gathered empirically by inspecting the database of executed nodes. We start by setting a score
+for each pair of (top) candidate arguments. Before a node is executed, we go through all the facts of the target predicate
+and count the number of facts for a given value of the argument and use the following entropy formula:
+
+\[
+Entropy(A, F) = - \sum_{v \in values(F, A)} \frac{count(F, A = v)}{total(F)} 	\log_2 \frac{count(F, A = v)}{total(F)}
+\]
+
+where $A$ is the target argument, $F$ is the multi-set of linear facts for the target predicate, $values(F, A)$ is set of values of the argument $A$, $count(F, A = v)$ counts the number
+of linear facts where argument $A$ is equal to $v$ and $total(F)$ counts the number of linear facts in $F$.
+The entropy value is a good metric for indexing, since it tells us how much information do we need to describe an argument. If we
+need a lot of information then that must be the best argument to index.
+
+For an argument to score, its entropy times the number of times it has been used for lookup must be larger than the result of the other
+candidate argument. We perform this phase by executing again for $1/25n$ nodes.
+
+In the final and third phase, we find the best argument by picking the argument with the best score from phase 2. At this point,
+we signal other threads that we have new indexing information by updating a global variable called \texttt{indexing\_epoch}.
+In order to convert the node's linked lists into hash tables, each node has local variable also called \texttt{indexing\_epoch}
+that is compared to the global variable in order to rebuild the node database according to the new indexing
+information. Note that when a node has too few facts we do not create a hash table.
+
+Our VM also dynamically resizes the hash table to accommodate every increasing or decreasing hash tables. When the hash table becomes
+too dense, we duplicate the size of the hash table and rehash the facts. When it becomes too sparse, we either reduce the table in half
+or simply transform the table into a doubly linked list. This is done dynamically, from time to time, when a node executes.
+
+In our experience, we have seen very good results with this scheme, with programs such as the all-pairs shortest paths with a 2 to 5-fold
+improvement in speed. The time to execute the indexing algorithm is also negligible because programs with dynamic indices run as fast
+as programs with indices added from the start.
+
+\subsection{Update Optimization}
+
+Our compiler also detects cases where we re-derive a linear fact with new arguments. For example, the rule \texttt{a(N) -o a(N+1)}
+will compile to code that reuses the old \texttt{a(N)} fact:
+
+{\scriptsize
+
+\begin{Verbatim}
+LINEAR ITERATE OVER a MATCHING TO reg 0
+  MVFIELDREG 0.0 TO reg 1
+  MVINTREG INT 1 TO reg 2
+  reg 1 INT PLUS reg 2 TO reg 3
+  MVREGFIELD reg 3 TO 0.0
+  UPDATE reg 0
+  RETURN DERIVED
+RETURN
+\end{Verbatim}
+}
+
+We use the \texttt{flags} field presented in Section~\ref{sec:database} to mark updated nodes.
+
 \subsection{Runtime Data Structures}
 
 LM supports recursive types such as lists and pairs. These complex data structures are stored in
@@ -249,7 +318,3 @@ is a \emph{cons cell} with 3 fields: \texttt{tail}, the pointer to the next elem
 \texttt{head}, the element stored by this element of the list; and \texttt{refs} that counts the
 number of pointers to this list element in the VM. The list is deleted from the heap whenever
 \texttt{refs} is decremented to 0.
-
-\subsection{Optimizations}
-
-dynamic indexing

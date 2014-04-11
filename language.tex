@@ -68,9 +68,7 @@ replace(@3, 6, 7).
 
 \subsection{Example}
 
-We now present an example LM program that shows how LM programs are written and executed.
-
-Our example shown in Fig.~\ref{code:btree_replace} implements the key update operation for a binary tree
+We now present an example LM program in Fig.~\ref{code:btree_replace} that implements the key update operation for a binary tree
 represented as a key/value dictionary.
 We first declare all the predicates (lines 1-4), which represent the kinds of facts we are going to use.
 Predicate \texttt{left/2} and \texttt{right/2} are persistent while \texttt{value/3} and \texttt{replace/3} are linear.

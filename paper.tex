@@ -13,22 +13,22 @@
 \usepackage{subcaption}
 \usepackage[backref,pageanchor=true,plainpages=false, pdfpagelabels, bookmarks,bookmarksnumbered]{hyperref}
 \input{fp-macros}
-%
+
 \begin{document}
 \newcommand{\cmu}{\ensuremath{^\dag}}
 \newcommand{\fcup}{\ensuremath{^\ddag}}
 \pagestyle{headings}  % switches on printing of running heads
 \title{Implementation of a Parallel Virtual Machine for Executing Forward-Chaining Linear Logic Programs}
-%
+
 \titlerunning{Hamiltonian Mechanics}  % abbreviated title (for running head)
 %                                     also used for the TOC unless
 %                                     \toctitle is used
-%
+
 \author{Flavio Cruz\inst{1}\inst{2} \and Ricardo Rocha\inst{2}
 Seth Goldstein\inst{1} \and Frank Pfenning\inst{1}}
-%
+
 \authorrunning{Flavio Cruz et al.} % abbreviated author list (for running head)
-%
+
 \institute{Carnegie Mellon University, Pittsburgh, PA 15213, USA,\\
 \email{\{fmfernan, seth, fp\}@cs.cmu.edu}
 \and
@@ -45,14 +45,17 @@ Rua do Campo Alegre, 1021/1055, 4169-007 Porto, Portugal\\
 \section{Introduction}
 \input{introduction}
 
-\section{The LM Language}
+\section{The LM Language}\label{lm_language}
 \input{language}
 
-\section{The Virtual Machine}
+\section{The Virtual Machine}\label{virtual_machine}
 \input{virtual_machine}
 
-\section{Preliminary Results}
+\section{Preliminary Results}\label{results}
 \input{preliminary_results}
+
+\section{Related Work}\label{related_work}
+\input{related_work}
 
 \section{Conclusions}
 \input{conclusions}
