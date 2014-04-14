@@ -2,7 +2,7 @@ Logic programming is a declarative programming paradigm that has been used to ad
 Since logic programs are declarative, they are much easier to parallelize than imperative programs. First, logic programmers do not
 need to use low level programming constructs such as locks or semaphores to coordinate parallel execution, because logic
 systems hide such details from the programmer. Second, logic programs are easier to reason about since they are based on logical
-foundations, making it easier to prove that a program is correct.
+foundations.
 
 Logic based programming languages split into two main camps: forward-chaining programming languages and backwards-chaining 
 programming languages. Backwards-chaining logic programs are composed of a set of rules that can be activated by inputing a query. Given a query $q(\hat{x})$, an interpreter will work backwards by matching $q(\hat{x})$ against the head of a rule. If found, the interpreter will then try to match the body of the rule, recursively, until it finds the program axioms (rules without body). If the search procedure succeeds, the interpreter finds a valid substitution for the $\hat{x}$ variables. A popular backwards-chaining programming
@@ -36,5 +36,4 @@ To realize LM, we have implemented a compiler and a virtual machine that execute
 
 This paper describes the current implementation of
 our virtual machine and is organized as follows: in the next section we
-briefly describe LM language; in Section~\ref{virtual_machine} we present the virtual machine organization, including code organization, thread management and
-execution; finally, in Section~\ref{results} we present some experimental results.
+briefly describe LM language; in Section~\ref{virtual_machine} we present the virtual machine organization, including code organization and thread management; finally, we present some preliminary results.

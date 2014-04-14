@@ -35,32 +35,29 @@ thread with at least one extra active node. Starting from a random thread, it cy
 and steals from the first thread with nodes. Currently, each thread only takes one node per steal.
 
 \begin{figure}[h!]
+   \vspace{-0.2\intextsep}
 \scriptsize\begin{Verbatim}
-void work_loop(thread_id tid) {
-   while (true) {
-      if(has_work(tid)) {
+void work_loop(thread_id tid):
+   while (true):
+      if(has_work(tid)):
          current_node = pop_work(tid); // take node from the queue
-      } else {
-         // need to steal a node
-         for (i = 0; i < NUM_THREADS; ++i) {
-            if (current_node = steal_node_from_thread(target_thread)
+      else:
+         for (i = 0; i < NUM_THREADS; ++i): // need to steal a node
+            if (current_node = steal_node_from_thread(target_thread):
                break;
             target_thread = (target_thread + 1) % NUM_THREADS;
-         }
-      }
-      if(current_node == NULL) {
+      if(current_node == NULL):
          become_idle(tid);
-         if(!synchronize_termination(tid))
+         if(!synchronize_termination(tid)):
             return;
          become_active(tid);
-      } else {
+      else:
          process_node(current_node, tid);
-      }
-   }
-}
 \end{Verbatim}
+\vspace{-0.5\intextsep}
   \caption{Thread work loop.}
   \label{code:work_loop}
+  \vspace{-0.5\intextsep}
 \end{figure}
 
 When a node sends a fact to another node, we need to check if the target node is in the same work queue of the owner thread.
@@ -84,17 +81,8 @@ Registers can store facts, integers, floats, node addresses and pointers to runt
 data structures (lists and structures). When registers store facts, we can reference
 fields in the fact through the register.
 
-Given a rule \texttt{!a(X,Y), b(X,Z), c(X,Y) -o d(Y)} and a database with facts
-\texttt{!a(1,2), !a(2,3), b(1,3), b(5,3), c(1,2), c(1,3), c(5,3)} rule execution proceeds
-in a series of recursive loops: the first loop retrieves an iterator for the persistent facts
-of the predicate \texttt{!a/2} and moves the first valid fact, \texttt{!a(1,2)},
-to register 0; the inner loop retrieves linear facts that match \texttt{b(1,Z)} (from the
-\emph{join constraint}) and moves \texttt{b(1,3)} to register 1; finally, in the final inner
-loop we move \texttt{c(1,2)} to register 2 and the body of the rule is successfully matched. Next, we
-derive \texttt{d(2)}, where \texttt{2} comes from register 0.
-In Fig.~\ref{fig:byte_code} we show the concrete byte-code for the example rule.
-
-\begin{wrapfigure}{r}{0.5\textwidth}
+\begin{wrapfigure}{l}{0.5\textwidth}
+   \vspace{-1\intextsep}
 \scriptsize\begin{Verbatim}
 PERSISTENT ITERATE OVER a MATCHING TO reg 0
   LINEAR ITERATE OVER b MATCHING TO reg 1
@@ -112,14 +100,24 @@ PERSISTENT ITERATE OVER a MATCHING TO reg 0
   NEXT
 RETURN
 \end{Verbatim}
-\caption{Concrete byte-code of rule \texttt{!a(X,Y), b(X,Z), c(X,Y) -o d(Y).}}
+\caption{Byte-code for rule \texttt{!a(X,Y), b(X,Z), c(X,Y) -o d(Y).}}
 \label{fig:byte_code}
+\vspace{-1\intextsep}
 \end{wrapfigure}
+
+Given a rule \texttt{!a(X,Y), b(X,Z), c(X,Y) -o d(Y)} and a database with facts
+\texttt{!a(1,2), !a(2,3), b(1,3), b(5,3), c(1,2), c(1,3), c(5,3)} rule execution proceeds
+in a series of recursive loops: the first loop retrieves an iterator for the persistent facts
+of the predicate \texttt{!a/2} and moves the first valid fact, \texttt{!a(1,2)},
+to register 0; the inner loop retrieves linear facts that match \texttt{b(1,Z)} (from the
+\emph{join constraint}) and moves \texttt{b(1,3)} to register 1; finally, in the final inner
+loop we move \texttt{c(1,2)} to register 2 and the body of the rule is successfully matched. Next, we
+derive \texttt{d(2)}, where \texttt{2} comes from register 0.
+In Fig.~\ref{fig:byte_code} we show the concrete byte-code for the example rule.
 
 In case of failure to find a valid fact at any given loop, we jump
 to the outer loop in order to try the next candidate.
-
-Finally, whenever a rule match succeeds and the head is derived, we progressively backtrack to the outer most valid loop:
+If a rule match succeeds and the head is derived, we progressively backtrack to the outer most valid loop:
 if any inner loop uses linear facts we remove the fact from the database, but we will
 continue backtracking until we reach the first loop that uses linear facts,
 because all the others are now invalid (invalid candidates). In our example, we would jump to the
@@ -142,26 +140,28 @@ Each (sub-)database is implemented using three data structures: trie data struct
 The database must be implemented efficiently because during matching of rules we need
 to restrict the facts using a given match object, which fixes arguments of the target predicate to instantiated values. The data structures used are as follows:
 
-\begin{description}
-   \item[Trie Data Structures]
-
-   Tries are used exclusively to store persistent facts.
+\begin{itemize}
+   \item \emph{Trie Data Structures} are used exclusively to store persistent facts.
    Tries are trees where facts are indexed by the common arguments. When a trie level has too many nodes, we
    transform the linked list into a hash table in order to improve lookup.
       
-   \item[List Data Structures]
+   \item \emph{Doubly Linked List Data Structures} are used to store linear facts.
+   Each fact contains the standard \texttt{prev} and \texttt{next} pointers
+   and the fact arguments. We use a double linked list because it is very efficient to add and remove facts.
    
-   We use doubly linked lists to store linear facts. Each fact contains the standard \texttt{prev} and \texttt{next} pointers
-   and also the fact arguments. We use a double linked list because it is very efficient to add and remove facts.
-   
-   \item[Hash Table Data Structures]
-   
-   When a double linked list is too long and we need to search for facts by a fixed argument, it becomes very slow to go through the
-   linked list and find the valid facts. To fix this, the virtual machine decides which arguments are best to be indexed
+   \item \emph{Hash Table Data Structures} are used when linked lists are too long and we need to search filter by a fixed argument. The virtual machine decides which arguments are best to be indexed
    (see Section~\ref{indexing}) and then
-   uses an hash table indexed by the appropriate argument. If we need to look for such argument then we just lookup in the hash table. However,
-   if we need to go through all the facts, we just iterate through all the facts in the table. For collisions, we use the above doubly linked list data structure.
-\end{description}
+   uses an hash table indexed by the appropriate argument. If we need to go through all the facts, we just iterate through all the facts in the table. For collisions, we use the above doubly linked list data structure.
+\end{itemize}
+
+\begin{wrapfigure}{r}{0.5\textwidth}
+   \vspace{-1\intextsep}
+   \centering
+   \includegraphics[width=0.48\textwidth]{hash_table.pdf}
+   \caption{Example hash table data structure for storing predicate \texttt{a(int,int)}.}
+   \label{fig:hash_table}
+   \vspace{-1.5\intextsep}
+\end{wrapfigure}
 
 In Fig.~\ref{fig:hash_table} we show an example hash table data structure storing predicate \texttt{a(int,int)}. The table
 has 10 buckets and indexes facts by the second argument. We show the doubly linked list for bucket \texttt{2}. Each linear fact
@@ -171,19 +171,9 @@ consider the rule body \texttt{a(A,B), a(C,D) -o ...}. We first pick a fact for 
 being used and when we retrieve facts for \texttt{a(C, D)}, we know that one of them cannot be used because it would
 violate linearity.
 
-\begin{figure*}[h]
-   \centering
-   \includegraphics[width=0.75\textwidth]{hash_table.pdf}
-   \caption{Example hash table data structure for storing predicate \texttt{a(int,int)}.}
-   \label{fig:hash_table}
-\end{figure*}
-
 \subsection{Rule Engine}\label{rule_engine}
 
-The rule engine decides which rules need to be executed. The engine decides which rules have
-an high probability of executing successfully while taking into account the priority of rules.
-If a rule with higher priority can execute then it must execute before all the others. 
-
+The rule engine decides which rules may need to be executed while taking into account rule priorities.
 In Fig.~\ref{fig:rule_engine} we present the 5 main data structures for scheduling rule execution.
 \texttt{Rule Queue} is the bitmap representing the rules that will be run, \texttt{Active Bitmap} contains the rules that have enough
 facts to be fired, \texttt{Inactive Bitmap} contains the rules that must be dropped from \texttt{Rule Queue}, \texttt{Predicates Bitmap}
@@ -191,16 +181,18 @@ marks the newly derived facts and \texttt{Predicates Count} counts the number of
 To understand how our engine works, consider
 the program in Fig.~\ref{code:5rules}.
 
-\begin{wrapfigure}{r}{0.4\textwidth}
-\begin{Verbatim}
+\begin{wrapfigure}{l}{0.3\textwidth}
+\vspace{-1\intextsep}
+\footnotesize\begin{Verbatim}
 a, e(1) -o b.
 a -o c.
 b -o d.
 e(0) -o f.
 c -o e(1).
 \end{Verbatim}
-\caption{Example program with 5 rules.}
+\caption{\small{Example program with 5 rules.}}
 \label{code:5rules}
+\vspace{-0.5\intextsep}
 \end{wrapfigure}
 
 To apply the rules, we take the least significant rule from the bitmap, which is the candidate rule with the higher priority, and then run it. In our example, we need to execute the second rule \texttt{a -o c}, since we have facts \texttt{a} and \texttt{e(0)}.
@@ -210,7 +202,12 @@ in \texttt{Dropped Bitmap} since such rules are no longer applicable (\texttt{a}
 we remove the bits marked in \texttt{Dropped Bitmap} and add the active rules marked in \texttt{Active Bitmap} that are affected
 by predicates in \texttt{Predicates Map}. The engine has now scheduled the fourth and fifth rules to be run.
 
+Note that every node in the program has the same set of data structures present in Fig.~\ref{fig:rule_engine}.
+We use 32 bits integers to implement bitmaps and an array of 16 bits integers to count facts, resulting in
+$32 + 2P$ bytes per predicate.
+
 \begin{figure*}[h]
+   \vspace{-\intextsep}
    \centering
    \begin{subfigure}[b]{0.45\textwidth}
       \includegraphics[width=\textwidth]{rule_queue1.pdf}
@@ -222,11 +219,8 @@ by predicates in \texttt{Predicates Map}. The engine has now scheduled the fourt
    \end{subfigure}
    \caption{Rule engine main data structures.}
    \label{fig:rule_engine}
+   \vspace{-0.5\intextsep}
 \end{figure*}
-
-Note that every node in the program has the same set of data structures present in Fig.~\ref{fig:rule_engine}.
-We use 32 bits integers to implement bitmaps and an array of 16 bits integers to count facts. This requires
-at least $32$ bytes plus $2 * P$ bytes per predicate.
 
 We do a small optimization to reduce the number of derivations of persistent facts. We
 divide the program rules into two sets: \emph{persistent rules} and \emph{non persistent rules}.
@@ -244,7 +238,7 @@ at a node owned by another thread $T2$, then we may have problems because $T2$ m
 We added a lock and a boolean flag to each node to protect the access to the data structures. When a node starts to execute,
 we activate the flag and lock the node. When another thread tries to use the data structures, if first checks the flag and if
 not activated, it locks the node and performs the required updates. If the flag is activated, it stores the newly created fact
-on a list of incoming facts that is processed before the node is executed. This list is protected by a separate locking mechanism.
+on a list of facts that is processed before the node is executed.
 
 \subsection{Indexing}\label{indexing}
 
@@ -252,50 +246,51 @@ In Section~\ref{rule_engine} we explained that we use hash tables to dynamically
 The VM employs a fully dynamic mechanism to decide which argument may be optimal to improve fact lookup.
 The algorithm is performed in the initial part of the program execution and empirically tries to assess the argument
 of each predicate that more equally spreads the database across the values of the argument. Note that only one thread
-performs the algorithm, while the others execute as usual.
+performs the algorithm.
 
-The indexing algorithm is performed in three main steps. The first step gathers statistics of lookup data by keeping a counter
+The indexing algorithm is performed in three main steps. First, it gathers statistics of lookup data by keeping a counter
 of each predicate's argument.
-Every time we perform a search for a predicate where arguments are fixed to a concrete value, we increment the counter of such arguments. This phase is performed during rule execution of $1/25n$ nodes, where $n$ is the number of nodes in the program.
+Every time a fact search is performed where arguments are fixed to a value, the counter of such arguments is incremented. This phase is performed during rule execution of $1/25n$ nodes, where $n$ is the number of nodes in the program.
 
-The second step of the algorithm initially decides the candidate arguments of each predicate. If we did not need to lookup
-facts of a predicate using fixed arguments, then such predicates are not indexed and will continue to use doubly linked lists.
-If only one argument was needed during search, then we immediately mark such argument as the indexing argument. Finally, in all
-other cases, we pick the top 2 arguments and we will then gather \emph{entropy statistics} for those two arguments.
+The second step of the algorithm initially decides the candidate arguments of each predicate.
+If a predicate did not fix any arguments, then it will be not indexed.
+If only one argument was fixed, then such such argument is set as the indexing argument. Otherwise, the top 2 arguments
+are selected for the third phase, where \emph{entropy statistics} are collected dynamically.
 
-Entropy statistics are gathered empirically by inspecting the database of executed nodes. We start by setting a score
-for each pair of (top) candidate arguments. Before a node is executed, we go through all the facts of the target predicate
-and count the number of facts for a given value of the argument and use the following entropy formula:
+During the third phase, each candidate argument has an entropy score.
+Before a node is executed, the facts of the target predicate
+are used in the following formula applied for the two arguments:
+
+\vspace{-0.5\intextsep}
 
 \[
 Entropy(A, F) = - \sum_{v \in values(F, A)} \frac{count(F, A = v)}{total(F)} 	\log_2 \frac{count(F, A = v)}{total(F)}
 \]
+\vspace{-0.5\intextsep}
 
-where $A$ is the target argument, $F$ is the multi-set of linear facts for the target predicate, $values(F, A)$ is set of values of the argument $A$, $count(F, A = v)$ counts the number
+Where $A$ is the target argument, $F$ is the multi-set of linear facts for the target predicate, $values(F, A)$ is set of values of the argument $A$, $count(F, A = v)$ counts the number
 of linear facts where argument $A$ is equal to $v$ and $total(F)$ counts the number of linear facts in $F$.
-The entropy value is a good metric because it tells us how much information do we need to describe an argument. If we
-need a lot of information then that must be the best argument to index.
+The entropy value is a good metric because it tells us how much information is needed to describe an argument.
+If more information is needed, then that must be the best argument to index.
 
-For an argument to score, its entropy times the number of times it has been used for lookup must be larger than the result of the other
-candidate argument. We perform this phase by executing again for $1/25n$ nodes.
+For one of the arguments to score, $Entropy(A, F)$ multiplied by the number of times it has been used for lookup must be larger than the other argument. This is performed for $1/25n$ node executions.
 
-In the final and third phase, we find the best argument by picking the argument with the best score from phase 2. At this point,
-we signal other threads that we have new indexing information by updating a global variable called \texttt{indexing\_epoch}.
+In the final and third phase, the best argument with the best score is selected and then
+a global variable called \texttt{indexing\_epoch} is updated.
 In order to convert the node's linked lists into hash tables, each node has local variable also called \texttt{indexing\_epoch}
 that is compared to the global variable in order to rebuild the node database according to the new indexing
 information.
 
 Our VM also dynamically resizes the hash table to accommodate every increasing or decreasing hash tables. When the hash table becomes
-too dense, we duplicate the size of the hash table and rehash the facts. When it becomes too sparse, we either reduce the table in half
-or simply transform the table into a doubly linked list. This is done once in a while, before a node executes.
+too dense, the hash table becomes twice as big. When it becomes too sparse, the table is reduce in half
+or simply transformed back into a doubly linked list. This is done once in a while, before a node executes.
 
 In our experience, we have seen very good results with this scheme, with programs such as the all-pairs shortest paths with a 2 to 5-fold
-improvement in speed. The time to execute the indexing algorithm is also negligible because programs with dynamic indices run as fast
-as programs with indices added from the start.
-
-\subsection{Update Optimization}
+improvement in speed. The overhead of dynamic indexing is also negligible since programs run almost as fast
+as if the indices have been added from the start.
 
 \begin{wrapfigure}{r}{0.5\textwidth}
+\vspace{-1.5\intextsep}
 \scriptsize\begin{Verbatim}
 LINEAR ITERATE OVER a MATCHING TO reg 0
   MVFIELDREG 0.0 TO reg 1
@@ -306,9 +301,12 @@ LINEAR ITERATE OVER a MATCHING TO reg 0
   RETURN DERIVED
 RETURN
 \end{Verbatim}
-\caption{Byte-code for rule \texttt{a(N) -o a(N+1)}.}
+\caption{\small{Byte-code for rule \texttt{a(N) -o a(N+1)}.}}
 \label{code:update}
+\vspace{-1.5\intextsep}
 \end{wrapfigure}
+
+\subsection{Update Optimization}
 
 Our compiler also detects cases where we re-derive a linear fact with new arguments.
 For example, as shown in Fig.~\ref{code:update}, the rule \texttt{a(N) -o a(N+1)}

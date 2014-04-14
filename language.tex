@@ -4,11 +4,11 @@
 
 Linear Meld (LM) is a logic programming language that offers a declarative and structured way to manage state.
 A program consists of a database and a set of derivation rules. The database consists of either persistent facts
-or linear facts. Persistent facts are never deleted, while linear facts can be consumed when used to apply a rule.
+or linear facts. Persistent facts are never deleted, while linear facts can be retracted.
 
 The dynamic (or operational) semantics of LM are identical to Datalog.
 Initially, we populate the database with the program's axioms and then determine which derivation rules can be applied by using the current database. Once a rule is applied, we derive new facts, which are then added to the database.
-If a rule uses linear facts, they are consumed and thus deleted from the database.
+If a rule uses linear facts, they are deleted from the database.
 The program stops when we reach \emph{quiescence}, that is, when we can no longer apply any derivation rule.
 
 Each fact is a predicate on a tuple of \emph{values}, where the type of the predicate prescribes the types of the arguments.
@@ -22,8 +22,9 @@ the new facts that have been not considered yet to create a set of \emph{candida
 The set of candidate rules is then applied (by priority) and updated as new facts are derived.
 
 
-{\footnotesize
+{\scriptsize
 \begin{figure}[h]
+   \vspace{-0.5\intextsep}
 \scriptsize\begin{Verbatim}[numbers=left]
 type left(node, node).
 type right(node, node).
@@ -31,22 +32,15 @@ type linear value(node, int, int).
 type linear replace(node, int, int).
 
 // we found our key
-replace(A, K, New),
-value(A, K, Old)
+replace(A, K, New), value(A, K, Old)
    -o value(A, K, New).
 
 // go left
-replace(A, RKey, RValue),
-value(A, Key, Value),
-!left(A, B),
-RKey < Key
+replace(A, RKey, RValue), value(A, Key, Value), !left(A, B), RKey < Key
    -o value(A, Key, Value), replace(B, RKey, RValue).
 
 // go right
-replace(A, RKey, RValue),
-value(A, Key, Value),
-!right(A, B),
-RKey > Key
+replace(A, RKey, RValue), value(A, Key, Value), !right(A, B), RKey > Key
    -o value(A, Key, Value), replace(B, RKey, RValue).
 
 // binary tree configuration
@@ -63,6 +57,7 @@ replace(@3, 6, 7).
 \end{Verbatim}
 \caption{Binary tree dictionary: replacing a key's value.}
   \label{code:btree_replace}
+  \vspace{-\intextsep}
 \end{figure}
 }
 
@@ -76,11 +71,11 @@ Predicate \texttt{left/2} and \texttt{right/2} are persistent while \texttt{valu
 be updated since it is linear. The \texttt{replace/3} linear predicate represents an update operation where the key in
 the second argument will be updated to the value in the third argument.
 
-The algorithm uses three rules for the three cases of updating a key's value: the first rule (lines 6-9) performs the update;
-the second rule (lines 11-16) recursively picks the left branch for the update operation; and the third rule (lines 18-23) picks the right branch.
-The axioms of this program are presented in lines 25-35 and they describe the initial binary tree configuration, including keys and values.
+The algorithm uses three rules for the three cases of updating a key's value: the first rule (lines 6-8) performs the update;
+the second rule (lines 10-12) recursively picks the left branch for the update operation; and the third rule (lines 14-16) picks the right branch.
+The axioms of this program are presented in lines 18-28 and they describe the initial binary tree configuration, including keys and values.
 By having the \texttt{update(@3, 6, 7)} axiom instantiated at the root node we intend to change the the value of key 6 to 7.
-Note that when writing rules or axioms we precede persistent facts with a \texttt{!} in order to distinguish them from linear facts.
+Note that when writing rules or axioms we precede persistent facts with a \texttt{!}.
 
 Fig.~\ref{fig:btree_trace} represents the trace of the algorithm. Note that the program database has been partitioned
 by the tree nodes using the first argument of each fact. In Fig.~\ref{fig:btree_trace}~(a) we present the database
@@ -89,6 +84,7 @@ We use the same rule again in Fig.~\ref{fig:btree_trace}~(c) where we finally re
 \texttt{value(@6, 6, 6)} is updated to \texttt{value(@6, 6, 7)}.
 
 \begin{figure}[h]
+   \vspace{-0.75\intextsep}
         \centering
         \begin{subfigure}[b]{0.5\textwidth}
                 \includegraphics[width=\textwidth]{btree_trace1}
@@ -113,11 +109,12 @@ We use the same rule again in Fig.~\ref{fig:btree_trace}~(c) where we finally re
                   \label{fig:btree_trace4}
           \end{subfigure}
         \caption{An execution trace for the binary tree dictionary algorithm.}\label{fig:btree_trace}
+        \vspace{-\intextsep}
 \end{figure}
 
 \subsection{Syntax}
 
-\renewcommand{\arraystretch}{1.5}
+\renewcommand{\arraystretch}{1.2}
 \begin{table}[h]
 \centering
 \begin{tabular}{ l l c l }
@@ -141,7 +138,10 @@ We use the same rule again in Fig.~\ref{fig:btree_trace}~(c) where we finally re
   Known Linear Facts & $\Delta$ & $::=$ & $\cdot \; | \; \Delta, l(\hat{t})$ \\
   Known Persistent Facts & $\Gamma$ & $::=$ & $\cdot \; | \; \Gamma, \bang p(\hat{t})$ \\
 \end{tabular}
-\caption{Abstract syntax of LM.}\label{tbl:ast}
+\vspace{0.5\intextsep}
+\caption{Abstract syntax of LM.}
+\label{tbl:ast}
+\vspace{-1\intextsep}
 \end{table}
 \renewcommand{\arraystretch}{1.0}
 
@@ -170,12 +170,14 @@ in the database.
 
 The following example illustrates a simple program that uses comprehensions:
 
+{\footnotesize
 \begin{Verbatim}
 !edge(@1, @2).
 !edge(@1, @3).
 iterate(@1).
 iterate(A) -o {B | !edge(A, B) | perform(B)}.
 \end{Verbatim}
+}
 
 When the rule is fired, we consume \texttt{iterate(@1)} and then generate the comprehension. Here, we iterate through
 all the \texttt{edge/2} facts that match \texttt{!edge(@1, B)}, which are: \texttt{!edge(@1, @2)} and \texttt{!edge(@1, @3)}.
@@ -193,6 +195,7 @@ we aggregate the values represented by $y$ and derive $SH_2$ only once using $y$
 
 To better understand aggregates, let's consider a database with the following facts and a rule:
 
+{\footnotesize
 \begin{Verbatim}
 price(@1, 3).
 price(@1, 4).
@@ -200,6 +203,7 @@ price(@1, 5).
 count-prices(@1).
 count-prices(A) -o [sum => P | . | price(A, P) | 1 | total(A, P)].
 \end{Verbatim}
+}
 
 By applying the rule, we consume \texttt{count-prices(@1)} and
 derive the aggregate which consumes all the \texttt{price(@1, P)} facts.
@@ -221,8 +225,6 @@ since any node can be picked to run as long as it contains enough facts to fire 
 Facts coming from other nodes will arrive in order of derivation but may be considered
 partially and there is no particular order among the neighborhood. To improve concurrency,
 the programmer is encouraged to write rules that take advantage of the non-deterministic nature of execution.
-
-\subsection{Application}
 
 LM has been used to implement several parallel algorithms, including: belief propagation~\cite{Gonzalez+al:aistats09paraml},
 belief propagation with residual splash~\cite{Gonzalez+al:aistats09paraml}, PageRank, graph coloring,
