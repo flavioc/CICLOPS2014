@@ -8,11 +8,10 @@ are inspired in research done in CHR~\cite{DBLP:journals/corr/cs-PL-0408025}.
 
 There are also non logical based systems intended to solve graph-based problems such as Dryad, Pregel or GraphLab.
 The Dryad system~\cite{Isard:2007:DDD:1272996.1273005} is a framework that combines computational vertices
-with communication channels (edges) to form a data-flow graph. Each program is scheduled to
-run on multiple computers or cores and data is partitioned during runtime. Routines that run on computational vertices
-are sequential, with no locking required.
-The Pregel system~\cite{Malewicz:2010:PSL:1807167.1807184} is also graph-based, although programs have a more strict
-structure. They must be represented as a sequence of iterations where each iteration is composed of computation and message passing.
-Pregel is aimed at solving very big graphs
-and to scale to large architectures. GraphLab~\cite{GraphLab2010} is a C++ library for developing parallel machine learning algorithms. While
-Pregel uses message passing, GraphLab allows nodes to have read/write access to different scopes through different concurrent access models in order to balance performance and data consistency. Each consistency model provides different guarantees that are suited to multiple classes of algorithms. GraphLab also provides several schedulers that dictate the order in which node's are computed.
+with communication channels (edges) to form a data-flow graph. 
+The Pregel system~\cite{Malewicz:2010:PSL:1807167.1807184} is also graph-based, although programs must be represented
+as a sequence of iterations where each iteration is composed of computation and message passing.
+%Pregel is aimed at solving very big graphs and to scale to large architectures.
+Finally, GraphLab~\cite{GraphLab2010} is a library for developing parallel (graph-based) machine learning algorithms in C++
+and provides several schedulers to dictate the order of node execution.
+%While Pregel uses message passing, GraphLab allows nodes to have read/write access to different scopes through different concurrent access models in order to balance performance and data consistency. Each consistency model provides different guarantees that are suited to multiple classes of algorithms. 

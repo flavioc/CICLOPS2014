@@ -94,7 +94,7 @@ loop we move \texttt{c(1,2)} to register 2 and the body of the rule is successfu
 derive \texttt{d(2)}, where \texttt{2} comes from register 0.
 In Fig.~\ref{fig:byte_code} we show the concrete byte-code for the example rule.
 
-\begin{figure}[h]
+\begin{wrapfigure}{r}{0.5\textwidth}
 \scriptsize\begin{Verbatim}
 PERSISTENT ITERATE OVER a MATCHING TO reg 0
   LINEAR ITERATE OVER b MATCHING TO reg 1
@@ -114,7 +114,7 @@ RETURN
 \end{Verbatim}
 \caption{Concrete byte-code of rule \texttt{!a(X,Y), b(X,Z), c(X,Y) -o d(Y).}}
 \label{fig:byte_code}
-\end{figure}
+\end{wrapfigure}
 
 In case of failure to find a valid fact at any given loop, we jump
 to the outer loop in order to try the next candidate.
@@ -189,8 +189,9 @@ In Fig.~\ref{fig:rule_engine} we present the 5 main data structures for scheduli
 facts to be fired, \texttt{Inactive Bitmap} contains the rules that must be dropped from \texttt{Rule Queue}, \texttt{Predicates Bitmap}
 marks the newly derived facts and \texttt{Predicates Count} counts the number of facts per predicate.
 To understand how our engine works, consider
-the following small program:
+the program in Fig.~\ref{code:5rules}.
 
+\begin{wrapfigure}{r}{0.4\textwidth}
 \begin{Verbatim}
 a, e(1) -o b.
 a -o c.
@@ -198,6 +199,9 @@ b -o d.
 e(0) -o f.
 c -o e(1).
 \end{Verbatim}
+\caption{Example program with 5 rules.}
+\label{code:5rules}
+\end{wrapfigure}
 
 To apply the rules, we take the least significant rule from the bitmap, which is the candidate rule with the higher priority, and then run it. In our example, we need to execute the second rule \texttt{a -o c}, since we have facts \texttt{a} and \texttt{e(0)}.
 Because the derivation is successful, we derive \texttt{c} and consume \texttt{a}. In Fig.~\ref{fig:rule_engine}~(b) we
@@ -269,7 +273,7 @@ Entropy(A, F) = - \sum_{v \in values(F, A)} \frac{count(F, A = v)}{total(F)} 	\l
 
 where $A$ is the target argument, $F$ is the multi-set of linear facts for the target predicate, $values(F, A)$ is set of values of the argument $A$, $count(F, A = v)$ counts the number
 of linear facts where argument $A$ is equal to $v$ and $total(F)$ counts the number of linear facts in $F$.
-The entropy value is a good metric for indexing, since it tells us how much information do we need to describe an argument. If we
+The entropy value is a good metric because it tells us how much information do we need to describe an argument. If we
 need a lot of information then that must be the best argument to index.
 
 For an argument to score, its entropy times the number of times it has been used for lookup must be larger than the result of the other
@@ -279,11 +283,11 @@ In the final and third phase, we find the best argument by picking the argument 
 we signal other threads that we have new indexing information by updating a global variable called \texttt{indexing\_epoch}.
 In order to convert the node's linked lists into hash tables, each node has local variable also called \texttt{indexing\_epoch}
 that is compared to the global variable in order to rebuild the node database according to the new indexing
-information. Note that when a node has too few facts we do not create a hash table.
+information.
 
 Our VM also dynamically resizes the hash table to accommodate every increasing or decreasing hash tables. When the hash table becomes
 too dense, we duplicate the size of the hash table and rehash the facts. When it becomes too sparse, we either reduce the table in half
-or simply transform the table into a doubly linked list. This is done dynamically, from time to time, when a node executes.
+or simply transform the table into a doubly linked list. This is done once in a while, before a node executes.
 
 In our experience, we have seen very good results with this scheme, with programs such as the all-pairs shortest paths with a 2 to 5-fold
 improvement in speed. The time to execute the indexing algorithm is also negligible because programs with dynamic indices run as fast
@@ -291,12 +295,8 @@ as programs with indices added from the start.
 
 \subsection{Update Optimization}
 
-Our compiler also detects cases where we re-derive a linear fact with new arguments. For example, the rule \texttt{a(N) -o a(N+1)}
-will compile to code that reuses the old \texttt{a(N)} fact:
-
-{\scriptsize
-
-\begin{Verbatim}
+\begin{wrapfigure}{r}{0.5\textwidth}
+\scriptsize\begin{Verbatim}
 LINEAR ITERATE OVER a MATCHING TO reg 0
   MVFIELDREG 0.0 TO reg 1
   MVINTREG INT 1 TO reg 2
@@ -306,9 +306,16 @@ LINEAR ITERATE OVER a MATCHING TO reg 0
   RETURN DERIVED
 RETURN
 \end{Verbatim}
-}
+\caption{Byte-code for rule \texttt{a(N) -o a(N+1)}.}
+\label{code:update}
+\end{wrapfigure}
 
+Our compiler also detects cases where we re-derive a linear fact with new arguments.
+For example, as shown in Fig.~\ref{code:update}, the rule \texttt{a(N) -o a(N+1)}
+will compile to code that reuses the old \texttt{a(N)} fact.
 We use the \texttt{flags} field presented in Section~\ref{sec:database} to mark updated nodes.
+
+\iffalse
 
 \subsection{Runtime Data Structures}
 
@@ -318,3 +325,5 @@ is a \emph{cons cell} with 3 fields: \texttt{tail}, the pointer to the next elem
 \texttt{head}, the element stored by this element of the list; and \texttt{refs} that counts the
 number of pointers to this list element in the VM. The list is deleted from the heap whenever
 \texttt{refs} is decremented to 0.
+
+\fi

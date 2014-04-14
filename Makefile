@@ -5,7 +5,8 @@ paper.pdf: Makefile paper.tex \
 		refs.bib introduction.tex \
 		language.tex virtual_machine.tex \
 		conclusions.tex related_work.tex \
-		preliminary_results.tex
+		preliminary_results.tex \
+		abstract.tex
 	pdflatex paper.tex
 	pdflatex paper.tex
 	bibtex paper
