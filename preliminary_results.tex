@@ -8,9 +8,9 @@ with two 16 (32) Core AMD Opteron
 (tm) Processor 6274 $@$ 2.2 GHz with 32 GBytes of RAM memory and running the Linux
 kernel 3.8.3-1.fc17.x86\_64.
      We compiled our VM using GCC 4.7.2 (g++) with the flags \texttt{-O3 -std=c+0x -march=x86-64}.
-     We run all experiments 3 times with the same configuration and then we averaged the execution time.
+     We run all experiments 3 times and then averaged the execution time.
      
-\paragraph{Scalability Results}
+\subsubsection{Scalability Results}
 
 For this section, we run each program using 1, 2, 4, 6, 8, 10, 12, 14 and 16 threads and compared the runtime against the execution of the sequential version of the VM. We used the following programs:
 
@@ -48,7 +48,7 @@ Figure~\ref{exp:graph_coloring} presents the speedup results for the GGC program
 The PageRank results are shown in Fig.~\ref{exp:pagerank}. We used the same search engine dataset as before and a new random dataset with 5000 nodes and 500,000 edges. Although the search engine graph (Fig.~\ref{exp:pagerank}~(a)) has half the edges (around 250,000), it scales better than the random graph (Fig.~\ref{exp:pagerank}~(b)), meaning that the PageRank program depends on the number of nodes to be more scalable.
 
 \begin{figure*}[h]
-   \vspace{-0.2\intextsep}
+   \vspace{-0.5\intextsep}
    \centering
    \begin{subfigure}[b]{\plotsize}
       \includegraphics[width=\textwidth]{speedup_pagerank-search_engines.pdf}
@@ -60,11 +60,11 @@ The PageRank results are shown in Fig.~\ref{exp:pagerank}. We used the same sear
    \end{subfigure}
    \caption{Experimental results for the asynchronous PageRank algorithm.}
    \label{exp:pagerank}
-   \vspace{-0.1\intextsep}
+   \vspace{-0.8\intextsep}
 \end{figure*}
 
 \begin{figure*}[h]
-   \vspace{-0.1\intextsep}
+   \vspace{-0.5\intextsep}
    \centering
    \begin{subfigure}[b]{\plotsize}
       \includegraphics[width=\textwidth]{speedup_8queens-13.pdf}
@@ -86,7 +86,7 @@ Finally, we shown the results for the Belief Propagation~(BP) program in Fig.~\r
 and benefits (as expected) from having multiple threads executing since the belief values of each node will converge faster.
 The super-linear results prove this assertion.
 
-\paragraph{Absolute Execution Time}
+\subsubsection{Absolute Execution Time}
 
 As we have seen, our VM scales reasonably well, but how does it fair in terms of absolute execution time? We now compare the execution
 time using one thread against other competing systems.
