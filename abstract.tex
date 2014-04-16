@@ -1,7 +1,8 @@
 Linear Meld is a concurrent forward-chaining linear logic programming language where logical facts can be asserted and
-retracted in a structured way. The database of facts is partitioned by the nodes of a graph structure and concurrency is achieved by
-executing nodes simultaneously. Communication arises whenever nodes send facts to other nodes by fact derivation.
-We present an overview of the virtual machine that we implemented to run Linear Meld on multicores, including
-code organization, thread management, rule execution and database organization for efficient fact insertion, lookup and deletion.
-Although our virtual machine is a work-in-progress, our results show that Linear Meld is not only capable of scaling graph and machine
-learning programs but it also exhibits some interesting performance results when compared against other programming languages.
+retracted in a structured way. The database of facts is partitioned by the nodes of a graph structure which leads
+to parallelism if nodes are executed simultaneously. Communication arises whenever nodes send facts to other nodes
+by fact derivation. We present an overview of the virtual machine that we implemented to run Linear Meld on multicores,
+including code organization, thread management, rule execution and database organization for efficient fact insertion,
+lookup and deletion. Although our virtual machine is a work-in-progress, our results already show that Linear Meld is not only
+capable of scaling graph and machine learning programs but it also exhibits some interesting performance results when
+compared against other programming languages.

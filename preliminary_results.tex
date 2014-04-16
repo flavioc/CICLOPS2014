@@ -1,7 +1,7 @@
-In this section we will present some preliminary results of our VM.
-First, we present scalability results in order to show that LM programs take advantage of the advantages of multicore architectures.
-Next, we present some absolute execution times and a comparison with similar programs in other programming languages.
-We want to present evidence that LM is a viable language.
+This section presents preliminary results for our VM.
+First, we present scalability results in order to show that LM programs can take advantage of multicore architectures.
+Next, we present a comparison with similar programs written in other programming languages
+in order to show evidence that our VM is viable.
 
 For our experimental setup, we used a machine 
 with two 16 (32) Core AMD Opteron
@@ -20,40 +20,42 @@ For this section, we run each program using 1, 2, 4, 6, 8, 10, 12, 14 and 16 thr
 
 \begin{itemize}
    \item Greedy Graph Coloring (GGC) colors nodes in a graph so that no two adjacent nodes have the same color. We start with a small number of colors and then we expand the number of colors when we cannot color the graph.
-   \item PageRank implements an asynchronous PageRank algorithm without synchronization between iterations. Every time a node sends a new rank to its neighbors and the change was significant, the neighbors are scheduled to recompute their ranks.
+   \item PageRank implements a PageRank algorithm without synchronization between iterations. Every time a node sends a new rank to its neighbors and the change was significant, the neighbors are scheduled to recompute their ranks.
    \item N-Queens, the classic puzzle for a 13x13 board.
    \item Belief Propagation, a machine learning algorithm to denoise images.
 \end{itemize}
 
-Figure~\ref{exp:graph_coloring} presents the speedup results for the GGC program using 2 different datasets. In Fig.~\ref{exp:graph_coloring}~(a) we show the speedup for a graph of 12,000 webpages\footnote{The search engine graph was retrieved from \url{http://www.cs.toronto.edu/~tsap/experiments/download/download.html}}. Since this dataset follows the power law, that is, there is a small number of pages with a lots of links (1\% of the nodes have 75\% of the edges), the speedup is slightly worse than the benchmark shown in Fig.~\ref{exp:graph_coloring}~(b), where we use a random dataset of 2,000 nodes and an uniform distribution of edges.
+Figure~\ref{exp:graph_coloring} presents the speedup results for the GGC program using 2 different datasets. In Fig.~\ref{exp:graph_coloring}a we show the speedup for a search engine graph of 12,000 webpages\footnote{Available from \url{http://www.cs.toronto.edu/~tsap/experiments/download/download.html}}. Since this dataset follows the power law, that is, there is a small number of pages with a lots of links (1\% of the nodes have 75\% of the edges), the speedup is slightly worse than the benchmark shown in Fig.~\ref{exp:graph_coloring}b, where we use a random dataset of 2,000 nodes with an uniform distribution of edges.
 
 \newcommand{\plotsize}{0.38\textwidth}
 
 \begin{figure*}[h]
-   \vspace{-0.5\intextsep}
+   \vspace{-0.7\intextsep}
    \centering
    \begin{subfigure}[b]{\plotsize}
       \includegraphics[width=\textwidth]{speedup_greedy-graph-coloring-search_engines.pdf}
-      \caption{Using a graph of web pages collected from a search engine (around 12,000 nodes and 292,000 edges).}
+      \caption{Using a graph of web pages with around 12,000 nodes and 292,000 edges.}
    \end{subfigure}
+   ~~~~
    \begin{subfigure}[b]{\plotsize}
       \includegraphics[width=\textwidth]{speedup_greedy-graph-coloring-2000.pdf}
       \caption{Using a random graph with 2,000 nodes and 600,000 edges.\newline}
    \end{subfigure}
    \caption{Experimental results for the GGC algorithm.}
    \label{exp:graph_coloring}
-   \vspace{-0.8\intextsep}
+   \vspace{-0.1\intextsep}
 \end{figure*}
 
-The PageRank results are shown in Fig.~\ref{exp:pagerank}. We used the same search engine dataset as before and a new random dataset with 5000 nodes and 500,000 edges. Although the search engine graph (Fig.~\ref{exp:pagerank}~(a)) has half the edges (around 250,000), it scales better than the random graph (Fig.~\ref{exp:pagerank}~(b)), meaning that the PageRank program depends on the number of nodes to be more scalable.
+The PageRank results are shown in Fig.~\ref{exp:pagerank}. We used the same search engine dataset as before and a new random dataset with 5,000 nodes and 500,000 edges. Although the search engine graph (Fig.~\ref{exp:pagerank}a) has half the edges (around 250,000), it scales better than the random graph (Fig.~\ref{exp:pagerank}b), meaning that the PageRank program depends on the number of nodes to be more scalable.
 
 \begin{figure*}[h]
-   \vspace{-0.5\intextsep}
+   \vspace{-0.1\intextsep}
    \centering
    \begin{subfigure}[b]{\plotsize}
       \includegraphics[width=\textwidth]{speedup_pagerank-search_engines.pdf}
       \caption{Using a graph of web pages collected from a search engine (around 12,000 nodes and 292,000 edges)}
    \end{subfigure}
+   ~~~~
    \begin{subfigure}[b]{\plotsize}
       \includegraphics[width=\textwidth]{speedup_pagerank-5000.pdf}
       \caption{Using a random graph with 5,000 nodes and 500,000 edges.\newline}
@@ -63,24 +65,26 @@ The PageRank results are shown in Fig.~\ref{exp:pagerank}. We used the same sear
    \vspace{-0.8\intextsep}
 \end{figure*}
 
+The results for the N-Queens program are shown in Fig.~\ref{exp:8queens}. The program is not regular since computation starts at the top of the grid and then rolls down, until only the last row be doing computation. Because the number of valid states for the nodes in the upper rows is much less than the nodes in the lower rows, this may potentially lead to
+load balancing problems. The results show that our system is able to scale well due to work stealing.
+
 \begin{figure*}[h]
-   \vspace{-0.5\intextsep}
+   \vspace{-0.7\intextsep}
    \centering
    \begin{subfigure}[b]{\plotsize}
       \includegraphics[width=\textwidth]{speedup_8queens-13.pdf}
       \caption{N-Queens program (13x13~board).}
       \label{exp:8queens}
    \end{subfigure}
+   ~~~~
    \begin{subfigure}[b]{\plotsize}
       \includegraphics[width=\textwidth]{speedup_bp-400.pdf}
       \caption{BP (400x400~image).}
       \label{exp:bp}
    \end{subfigure}
    \caption{Experimental Results for N-Queens and Belief Propagation.}
-   \vspace{-0.8\intextsep}
+   \vspace{-0.1\intextsep}
 \end{figure*}
-
-The results for the N-Queens program are shown in Fig.~\ref{exp:8queens}. The program is not regular since computation starts at the top of the grid and then rolls down, until only the last row is doing computation. Because the number of valid states for the nodes in the upper rows is much less than the nodes in the lower rows, this may create potential load balancing problems. The results show that our system is able to scale well due to work stealing.
 
 Finally, we shown the results for the Belief Propagation~(BP) program in Fig.~\ref{exp:bp}. BP is a regular and asynchronous program
 and benefits (as expected) from having multiple threads executing since the belief values of each node will converge faster.
@@ -88,18 +92,19 @@ The super-linear results prove this assertion.
 
 \subsubsection{Absolute Execution Time}
 
-As we have seen, our VM scales reasonably well, but how does it fair in terms of absolute execution time? We now compare the execution
-time using one thread against other competing systems.
+As we have seen, our VM scales reasonably well, but how does it compare in terms of absolute execution time
+with other competing systems? We next present such comparison for the execution time using one thread.
 
 In Fig.~\ref{comp:nqueens} we compare the LM's N-Queens version against 3 other versions: a straightforward sequential program implemented
-in C using backtracking; a sequential Python~\cite{vanRossum:1995:PRM} implementation; and a Prolog implementation executed in
+in C using backtracking; a sequential Python~\cite{vanRossum:1995:PRM}
+implementation; and a Prolog implementation executed in
 YAP Prolog~\cite{DBLP:journals/corr/abs-1102-3896}, an efficient implementation of Prolog. Numbers less than 1 mean that LM
 is faster and larger than 1 mean that LM is slower. We see that LM easily beats Python, but is 5 to 10 times slower than YAP
 and around 15 times slower than C.
 However, note that if we use at least 16 threads in LM, we can beat the sequential implementation written in C.
 
 \begin{figure*}[h]
-   \vspace{-0.2\intextsep}
+   \vspace{-0.1\intextsep}
    \centering
    
    \begin{subfigure}[b]{0.45\textwidth}
@@ -117,6 +122,7 @@ However, note that if we use at least 16 threads in LM, we can beat the sequenti
        \caption{N-Queens problem.}
       \label{comp:nqueens}
    \end{subfigure}
+   ~~~~
    \begin{subfigure}[b]{0.45\textwidth}
       \resizebox{4.6cm}{!} {
       \begin{tabular}{ | l | l | l | l |}

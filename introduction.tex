@@ -1,10 +1,10 @@
 Logic programming is a declarative programming paradigm that has been used to advance the state of parallel programming.
-Since logic programs are declarative, they are much easier to parallelize than imperative programs. First, logic programmers do not
-need to use low level programming constructs such as locks or semaphores to coordinate parallel execution, because logic
-systems hide such details from the programmer. Second, logic programs are easier to reason about since they are based on logical
-foundations.
+Since logic programs are declarative, they are much easier to parallelize than imperative programs.
+First, logic programs are easier to reason about since they are based on logical foundations.
+Second, logic programmers do not need to use low level programming constructs such as locks or semaphores to
+coordinate parallel execution, because logic systems hide such details from the programmer.
 
-Logic based programming languages split into two main camps: forward-chaining programming languages and backwards-chaining 
+Logic programming languages split into two main fields: \emph{forward-chaining} and \emph{backwards-chaining} 
 programming languages. Backwards-chaining logic programs are composed of a set of rules that can be activated by inputing a query. Given a query $q(\hat{x})$, an interpreter will work backwards by matching $q(\hat{x})$ against the head of a rule. If found, the interpreter will then try to match the body of the rule, recursively, until it finds the program axioms (rules without body). If the search procedure succeeds, the interpreter finds a valid substitution for the $\hat{x}$ variables. A popular backwards-chaining programming
 language is Prolog~\cite{Colmerauer:1993:BP:154766.155362}, which has been a productive research language for executing logic
 programs in parallel. Researchers took advantage of Prolog's non-determinism to evaluate subgoals
@@ -31,9 +31,32 @@ made of modular robots with a dynamic topology.
 LM also follows the same graph model of computation, but, instead, applies it to parallelize graph-based problems such as
 graph algorithms, search algorithms and machine learning algorithms. LM programs are naturally concurrent since the graph of nodes
 can be partitioned to be executed by different workers.
-To realize LM, we have implemented a compiler and a virtual machine that executes LM programs on multicore machines
-\footnote{Source code is available at \url{http://github.com/flavioc/meld}.}.
+To realize LM, we have implemented a compiler and a virtual machine that executes LM programs on multicore machines\footnote{Source code is available at \url{http://github.com/flavioc/meld}.}.
+We have implemented several parallel algorithms, including: belief propagation~\cite{Gonzalez+al:aistats09paraml},
+belief propagation with residual splash~\cite{Gonzalez+al:aistats09paraml}, PageRank, graph coloring,
+N-Queens, shortest path, diameter estimation, map reduce, quick-sort, neural network training, among others.
+
+\iffalse
+There are also non logical based systems intended to solve graph-based problems such as Dryad, Pregel or GraphLab.
+The Dryad system~\cite{Isard:2007:DDD:1272996.1273005} is a framework that combines computational vertices
+with communication channels (edges) to form a data-flow graph. 
+The Pregel system~\cite{Malewicz:2010:PSL:1807167.1807184} is also graph-based, although programs must be represented
+as a sequence of iterations where each iteration is composed of computation and message passing.
+Finally, GraphLab~\cite{GraphLab2010} is a library for developing parallel (graph-based) machine learning algorithms in C++
+and provides several schedulers to dictate the order of node execution.
+%While Pregel uses message passing, GraphLab allows nodes to have read/write access to different scopes through different concurrent access models in order to balance performance and data consistency. Each consistency model provides different guarantees that are suited to multiple classes of algorithms.
+\fi
+
+As a forward-chaining linear logic programming language, LM shares similarities with Constraint Handling Rules (CHR)~\cite{Betz:2005kx,DBLP:journals/corr/abs-1006-3039}.
+CHR is a concurrent committed-choice constraint language used to write constraint solvers. A CHR program is a set of rules and
+a set of constraints (which can be seen as facts). Constraints can be consumed or generated during the application of rules.
+Some optimizations ideas used in LM such as join optimizations and using different data structures for indexing facts
+are inspired in research done in CHR~\cite{DBLP:journals/corr/cs-PL-0408025}.
+
+
 
 This paper describes the current implementation of
-our virtual machine and is organized as follows: in the next section we
-briefly describe LM language; in Section~\ref{virtual_machine} we present the virtual machine organization, including code organization and thread management; finally, we present some preliminary results.
+our virtual machine and is organized as follows. First, we
+briefly introduce the LM language. Then, we present an overview of the virtual machine, including code organization,
+thread management, rule execution and database organization. Finally, we present preliminary results and
+outline some conclusions.
