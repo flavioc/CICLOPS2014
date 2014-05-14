@@ -1,16 +1,16 @@
 
 We developed a compiler that compiles LM programs to byte-code and a multi-threaded
-virtual machine (VM) using the Pthreads library to run the byte-code.
+virtual machine (VM) using POSIX threads to run the byte-code.
 The goal of our system is to keep the threads as busy as possible and to reduce inter-thread communication.
 
-The load balancing aspect of the system is performed by our work scheduler that is based on a work
+The load balancing aspect of the system is performed by our work scheduler that is based on a simple work
 stealing algorithm. Initially, the system will partition the application
 graph of $N$ nodes into $P$ subgraphs (the number of threads) and then each thread will work on their own subgraph.
 During execution, threads can steal nodes of other threads to keep themselves busy.
 
 Reduction of inter-thread communication is achieved by first ordering the node addresses present
 in the code in such a way that closer nodes are clustered together and then partitioning them
-to threads. During compilation, we take note of predicates that are used in rules for
+to threads. During compilation, we take note of predicates that are used in 
 communication rules (arguments with type \emph{node}) and then build a graph of nodes from
 the program's axioms. The nodes of the graph are then ordered by using a breadth-first search
 algorithm that changes the nodes of addresses to the domain $[0, n[$, where $n$ is the number of
@@ -21,7 +21,7 @@ $[0, n[$.
 
 When the VM starts, it reads the byte-code file and starts all threads.
 As a first step, all threads will grab their own nodes and assign the \texttt{owner} property of each.
-Because only one thread is allowed to do computation on a node at any giving time, the owner property
+Because only one thread is allowed to do computation on a node at any given time, the owner property
 defines the thread with such permission.
 Next, each thread fills up its \emph{work queue} with the initial nodes. This queue
 maintains the nodes that have new facts to be processed.
@@ -29,8 +29,8 @@ When a node sends a fact to another node, we need to check if the target node is
 If that is not the case, then we have a point of synchronization and we may need to
 make the target thread active.
 
-The main thread loop is shown in Fig.~\ref{code:work_loop}, where the threads
-inspects their work queue for active nodes. Procedure \texttt{process\_node()} takes a node with new candidate rules
+The main thread loop is shown in Fig.~\ref{code:work_loop}, where the thread
+inspects its work queue for active nodes. Procedure \texttt{process\_node()} takes a node with new candidate rules
 and executes them. If the work queue is empty, the thread attempts to steal one node from another thread before
 becoming idle. Starting from a random thread, it cycles through all the threads to find one active node.
 Eventually, there will be no more work to do and the threads will go idle. There is a global atomic counter, a global
@@ -148,7 +148,7 @@ We use a \texttt{flags} field to mark updated nodes (presented next).
 
 \subsubsection{Database Data Structures}\label{sec:database}
 
-We said before that LM rules are constrained by the first argument. Because nodes can execute
+We said before that LM rules are constrained by the first argument. Because nodes can be execute
 independently, our database is indexed by the node address and each sub-database does not
 need to deal with synchronization issues since at any given point, only one thread will be using
 the database. Note that the first argument of each fact is not stored.
@@ -158,15 +158,15 @@ to restrict the facts using a given match object, which fixes arguments of the t
 Each sub-database is implemented using three kinds of data structures:
 
 \begin{itemize}
-   \item \emph{Trie Data Structures} are used exclusively to store persistent facts.
+   \item \emph{Tries} are used exclusively to store persistent facts.
    Tries are trees where facts are indexed by the common arguments.
       
-   \item \emph{Doubly Linked List Data Structures} are used to store linear facts.
+   \item \emph{Doubly Linked Lists} are used to store linear facts.
    We use a double linked list because it is very efficient to add and remove facts.
    
-   \item \emph{Hash Table Data Structures} are used to improve lookup when linked lists are too long and when we need to do search filtered by a fixed argument. The virtual machine decides which arguments are best to be indexed
+   \item \emph{Hash Tables} are used to improve lookup when linked lists are too long and when we need to do search filtered by a fixed argument. The virtual machine decides which arguments are best to be indexed
    (see "Indexing") and then
-   uses an hash table indexed by the appropriate argument. If we need to go through all the facts, we just iterate through all the facts in the table. For collisions, we use the above doubly linked list data structure.
+   uses a hash table indexed by the appropriate argument. If we need to go through all the facts, we just iterate through all the facts in the table. For collisions, we use the above doubly linked list data structure.
 \end{itemize}
 
 \begin{wrapfigure}{r}{0.5\textwidth}
@@ -192,8 +192,8 @@ cannot be used since that would violate linearity.
 The rule engine decides which rules may need to be executed while taking into account rule priorities.
 There are 5 main data structures for scheduling rule execution;
 \texttt{Rule Queue} is the bitmap representing the rules that will be run;
-\texttt{Active Bitmap} contains the rules that have enough facts to be fired;
-\texttt{Inactive Bitmap} contains the rules that must be dropped from \texttt{Rule Queue};
+\texttt{Active Bitmap} contains the rules that can be fired since there are enough facts to activate the rule's body;
+\texttt{Dropped Bitmap} contains the rules that must be dropped from \texttt{Rule Queue};
 \texttt{Predicates Bitmap} marks the newly derived facts;
 and \texttt{Predicates Count} counts the number of facts per predicate.
 To understand how our engine works, consider the program in Fig.~\ref{code:5rules}.
@@ -232,7 +232,7 @@ Because the derivation is successful, we will consume \texttt{a} and derive \tex
 We thus mark the \texttt{c} predicate in the \texttt{Predicates Bitmap} and the first and second rules
 in \texttt{Dropped Bitmap} since such rules are no longer applicable (\texttt{a} is gone). To update the \texttt{Rule Queue},
 we remove the bits marked in \texttt{Dropped Bitmap} and add the active rules marked in \texttt{Active Bitmap} that are affected
-by predicates in \texttt{Predicates Map}. The engine thus schedules the fourth and fifth rules to run (Fig.~\ref{fig:rule_engine}b).
+by predicates in \texttt{Predicates Bitmap}. The engine thus schedules the fourth and fifth rules to run (Fig.~\ref{fig:rule_engine}b).
 
 Note that every node in the program has the same set of data structures present in Fig.~\ref{fig:rule_engine}.
 We use 32 bits integers to implement bitmaps and an array of 16 bits integers to count facts, resulting in

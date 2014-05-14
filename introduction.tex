@@ -12,20 +12,20 @@ in parallel with models such as \emph{or-parallelism} and \emph{and-parallelism}
 
 In a forward-chaining logic programming language, we start with a database of facts (filled with the program's
 axioms) and a set of logical rules. Then, we use the facts of the database to fire the program's rules and derive new facts that are
-then added to the database. This process is repeated many times until the database reaches \emph{quiescence} and no more information can
+then added to the database. This process is repeated until the database reaches \emph{quiescence} and no more information can
 be derived from the program.
 A popular forward-chaining programming language is Datalog~\cite{Ramakrishnan93asurvey}.
 
 In this paper, we present a new forward-chaining logic programming language called Linear Meld (LM) that is specially suited
 for concurrent programming over graphs. LM differs from Datalog-like languages because it integrates both classical
-logic and linear logic into the language, allowing some facts to be retracted and asserted in a logical fashion. Although most
+logic and linear logic~\cite{girard-87} into the language, allowing some facts to be retracted and asserted logically. Although most
 Datalog and Prolog-like programming languages allow some kind of state manipulation~\cite{Liu98extendingdatalog}, those features
-are extra-logical and do not provide a structured way to manage state.
+are extra-logical, reducing the advantages brought forward by logic programming.
 
 The roots of LM are the P2 system~\cite{Loo-condie-garofalakis-p2} and the original Meld~\cite{ashley-rollman-derosa-iros07wksp,ashley-rollman-iclp09}.
-P2 was a Datalog-like language that mapped a computer network
-to a graph, where each computer node could perform computations locally and communicate with neighbors.
-Meld was itself inspired in the P2 system but adapted to the concept of massively distributed systems
+P2 is a Datalog-like language that maps a computer network
+to a graph, where each computer node performs local computations and communicates with neighbors.
+Meld is itself inspired by the P2 system but adapted to the concept of massively distributed systems
 made of modular robots with a dynamic topology.
 
 LM also follows the same graph model of computation, but, instead, applies it to parallelize graph-based problems such as
@@ -50,8 +50,8 @@ and provides several schedulers to dictate the order of node execution.
 As a forward-chaining linear logic programming language, LM shares similarities with Constraint Handling Rules (CHR)~\cite{Betz:2005kx,DBLP:journals/corr/abs-1006-3039}.
 CHR is a concurrent committed-choice constraint language used to write constraint solvers. A CHR program is a set of rules and
 a set of constraints (which can be seen as facts). Constraints can be consumed or generated during the application of rules.
-Some optimizations ideas used in LM such as join optimizations and using different data structures for indexing facts
-are inspired in research done in CHR~\cite{DBLP:journals/corr/cs-PL-0408025}.
+Some optimization ideas used in LM such as join optimizations and using different data structures for indexing facts
+are inspired by research done in CHR~\cite{DBLP:journals/corr/cs-PL-0408025}.
 
 
 

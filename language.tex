@@ -7,7 +7,7 @@ A program consists of a database of facts and a set of derivation rules. The dat
 and linear facts. Persistent facts cannot be deleted, while linear facts can be asserted and retracted.
 
 The dynamic (or operational) semantics of LM are identical to Datalog.
-Initially, we populate the database with the program's axiom facts and then determine which derivation rules can be applied by using the current database. Once a rule is applied, we derive new facts, which are then added to the database.
+Initially, we populate the database with the \emph{program's axioms} (initial facts) and then determine which derivation rules can be applied using the current database. Once a rule is applied, we derive new facts, which are then added to the database.
 If a rule uses linear facts, they are retracted from the database.
 The program stops when \emph{quiescence} is achieved, that is, when rules no longer apply.
 
@@ -17,7 +17,7 @@ LM rules are type-checked using the predicate declarations in the header of the 
 also allowed.
 Each rule in LM has a defined priority that is inferred from its position in the source file.
 Rules at the beginning of the file have higher priority. We consider all
-the new facts that have been not considered yet to create a set of \emph{candidate rules}.
+the new facts that have been not used yet to create a set of \emph{candidate rules}.
 The set of candidate rules is then applied (by priority) and updated as new facts are derived.
 
 \subsection{Example}
@@ -85,7 +85,6 @@ We then use the same rule again in Fig.~\ref{fig:btree_trace}c where we finally 
                 \caption{Initial database. Replace axiom instantiated at root node $@3$.}
                 \label{fig:btree_trace1}
         \end{subfigure}%
-        ~
         \begin{subfigure}[b]{0.5\textwidth}
                 \includegraphics[width=\textwidth]{btree_trace2}
                 \caption{After applying rule 3 at node $@3$. Replace fact sent to node $@5$.}
@@ -96,7 +95,6 @@ We then use the same rule again in Fig.~\ref{fig:btree_trace}c where we finally 
                 \caption{After applying rule 3 at node $@5$. Replace fact reaches node $@6$.}
                 \label{fig:btree_trace3}
         \end{subfigure}%
-        ~
         \begin{subfigure}[b]{0.5\textwidth}
                   \includegraphics[width=\textwidth]{btree_trace4}
                   \caption{After applying rule 1 at node $@6$. Value of key 6 has changed to 7.}
@@ -107,6 +105,18 @@ We then use the same rule again in Fig.~\ref{fig:btree_trace}c where we finally 
 \end{figure}
 
 \subsection{Syntax}
+
+Table~\ref{tbl:ast} shows the abstract syntax for rules in LM.
+An LM program $Prog$ consists of a set of derivation rules $\Sigma$ and a database $D$.
+Each derivation rule $R$ can be written as $BE \lolli HE$ where $BE$ is the body of a rule and
+$HE$ is the head. Rules without bodies are allowed in LM and they are called \textit{axioms}. Rules without heads are also allowed.
+The body of a rule, $BE$, may contain linear ($L$) and persistent ($P$) \emph{fact expressions}
+and constraints ($C$). Fact expressions are template facts that instantiate variables
+(from facts in the database). Variables can be used again in the body for matching and
+also in the head when instantiating facts. Constraints are boolean expressions that must
+be true in order for the rule to be fired. Constraints use variables from fact expressions and are built using a small functional language that includes mathematical operations, boolean operations, external functions and literal values.
+The head of a rule, $HE$, contains linear ($L$) and persistent ($P$) \emph{fact templates} which are uninstantiated facts to derive new facts. The head can also have \emph{comprehensions} ($CE$) and \emph{aggregates} ($AE$). Head
+expressions may use the variables instantiated in the body.
 
 \renewcommand{\arraystretch}{1.2}
 \begin{table}[h]
@@ -138,18 +148,6 @@ We then use the same rule again in Fig.~\ref{fig:btree_trace}c where we finally 
 \vspace{-1\intextsep}
 \end{table}
 \renewcommand{\arraystretch}{1.0}
-
-Table~\ref{tbl:ast} shows the abstract syntax for rules in LM.
-A LM program $Prog$ consists of a set of derivation rules $\Sigma$ and a database $D$.
-Each derivation rule $R$ can be written as $BE \lolli HE$ where $BE$ is the body of a rule and
-$HE$ is the head. Rules without bodies are allowed in LM and they are called \textit{axioms}. Rules without heads are also allowed.
-The body of a rule, $BE$, may contain linear ($L$) and persistent ($P$) \emph{fact expressions}
-and constraints ($C$). Fact expressions are template facts that instantiate variables
-(from facts in the database). Variables can be used again in the body for matching and
-also in the head when instantiating facts. Constraints are boolean expressions that must
-be true in order for the rule to be fired. Constraints use variables from fact expressions and are built using a small functional language that includes mathematical operations, boolean operations, external functions and literal values.
-The head of a rule, $HE$, contains linear ($L$) and persistent ($P$) \emph{fact templates} which are uninstantiated facts to derive new facts. The head can also have \emph{comprehensions} ($CE$) and \emph{aggregates} ($AE$). Head
-expressions may use the variables instantiated in the body.
 
 \subsubsection{Comprehensions}
 
