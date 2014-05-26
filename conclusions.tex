@@ -1,12 +1,12 @@
 We have presented a parallel virtual machine for executing forward-chaining linear logic programs, with particular focus
 on parallel scheduling on multicores, rule execution and database organization for fast insertion,
 lookup, and deletion or linear facts.
-Our preliminary results show that the VM is able to scale the execution of programs when run with up to 16 threads.
-Although this is still a work in progress, the VM also fairs well against other programming languages.
+Our preliminary results show that the VM is able to scale the execution of some programs when run with up to 16 threads.
+Although this is still a work in progress, the VM fairs relatively well against other programming languages.
 Moreover, since LM programs are concurrent by default, we can easily get better performance from the start by executing
 them with multiple threads.
 
-In the future, we intend to take advantage of linear logic to perform whole-program optimizations,
-including computing program invariants, loop detection in rules and bypass of rule priorities. For instance,
-we want to detect during compile time which might be the best data structure for each predicate depending in how it
-is used in the rules.
+In the future, we want to improve our work stealing algorithm so that each thread steals nodes that are a better fit
+to the set of nodes owned by the thread (e.g. neighboring nodes).
+We also intend to take advantage of linear logic to perform whole-program optimizations,
+including computing program invariants and loop detection in rules.

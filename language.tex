@@ -109,11 +109,13 @@ We then use the same rule again in Fig.~\ref{fig:btree_trace}c where we finally 
 Table~\ref{tbl:ast} shows the abstract syntax for rules in LM.
 An LM program $Prog$ consists of a set of derivation rules $\Sigma$ and a database $D$.
 Each derivation rule $R$ can be written as $BE \lolli HE$ where $BE$ is the body of a rule and
-$HE$ is the head. Rules without bodies are allowed in LM and they are called \textit{axioms}. Rules without heads are also allowed.
+$HE$ is the head. Rules without bodies are allowed in LM and they are called \textit{axioms}.
+Rules without heads are specified using $1$ as the rule head.
 The body of a rule, $BE$, may contain linear ($L$) and persistent ($P$) \emph{fact expressions}
 and constraints ($C$). Fact expressions are template facts that instantiate variables
-(from facts in the database). Variables can be used again in the body for matching and
-also in the head when instantiating facts. Constraints are boolean expressions that must
+from facts in the database. Such variables are declared using either $\forall_{x}. R$ or $\exists_{x}. BE$.
+If using $\forall_{x}. R$ variables can also be used in the head of the rule.
+Constraints are boolean expressions that must
 be true in order for the rule to be fired. Constraints use variables from fact expressions and are built using a small functional language that includes mathematical operations, boolean operations, external functions and literal values.
 The head of a rule, $HE$, contains linear ($L$) and persistent ($P$) \emph{fact templates} which are uninstantiated facts to derive new facts. The head can also have \emph{comprehensions} ($CE$) and \emph{aggregates} ($AE$). Head
 expressions may use the variables instantiated in the body.

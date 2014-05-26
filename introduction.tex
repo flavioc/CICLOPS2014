@@ -21,16 +21,17 @@ for concurrent programming over graphs. LM differs from Datalog-like languages b
 logic and linear logic~\cite{girard-87} into the language, allowing some facts to be retracted and asserted logically. Although most
 Datalog and Prolog-like programming languages allow some kind of state manipulation~\cite{Liu98extendingdatalog}, those features
 are extra-logical, reducing the advantages brought forward by logic programming.
+In LM, since mutable state remains within the logical framework, we can reason logically about LM programs.
 
 The roots of LM are the P2 system~\cite{Loo-condie-garofalakis-p2} and the original Meld~\cite{ashley-rollman-derosa-iros07wksp,ashley-rollman-iclp09}.
 P2 is a Datalog-like language that maps a computer network
 to a graph, where each computer node performs local computations and communicates with neighbors.
 Meld is itself inspired by the P2 system but adapted to the concept of massively distributed systems
 made of modular robots with a dynamic topology.
-
 LM also follows the same graph model of computation, but, instead, applies it to parallelize graph-based problems such as
 graph algorithms, search algorithms and machine learning algorithms. LM programs are naturally concurrent since the graph of nodes
 can be partitioned to be executed by different workers.
+
 To realize LM, we have implemented a compiler and a virtual machine that executes LM programs on multicore machines\footnote{Source code is available at \url{http://github.com/flavioc/meld}.}.
 We have implemented several parallel algorithms, including: belief propagation~\cite{Gonzalez+al:aistats09paraml},
 belief propagation with residual splash~\cite{Gonzalez+al:aistats09paraml}, PageRank, graph coloring,
@@ -52,8 +53,6 @@ CHR is a concurrent committed-choice constraint language used to write constrain
 a set of constraints (which can be seen as facts). Constraints can be consumed or generated during the application of rules.
 Some optimization ideas used in LM such as join optimizations and using different data structures for indexing facts
 are inspired by research done in CHR~\cite{DBLP:journals/corr/cs-PL-0408025}.
-
-
 
 This paper describes the current implementation of
 our virtual machine and is organized as follows. First, we
