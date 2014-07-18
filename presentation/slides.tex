@@ -60,7 +60,6 @@ Rua do Campo Alegre, 1021/1055, 4169-007 Porto, Portugal}
       \item Rules can be explored in parallel
       \item Imperative programming enforces a specific sequence of execution
      \end{itemize}
-     \pause
      \item Two paradigms:
      \begin{itemize}
       \item Backwards-chaining: Prolog
@@ -210,7 +209,7 @@ fun next(int X) : int =
 {\small
       \begin{itemize}
       \item Graph is partitioned into P sub-graphs, where P is the number of threads
-      \item Each thread processes the nodes of their sub-graph
+      \item Each thread processes the nodes of its sub-graph
       \item Work stealing is employed whenever threads start to starve
       \end{itemize}
 }
@@ -226,6 +225,11 @@ fun next(int X) : int =
 \begin{frame}[fragile]
    \frametitle{Overview}
    \includegraphics[height=7.5cm]{overview.pdf}
+\end{frame}
+
+\begin{frame}[fragile]
+   \frametitle{Overview}
+   \includegraphics[height=7.5cm]{overview2.pdf}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -295,6 +299,11 @@ LINEAR ITERATE OVER uncolored MATCHING TO reg 0
 \end{frame}
 
 \begin{frame}[fragile]
+   \frametitle{Overview}
+   \includegraphics[height=7.5cm]{overview3.pdf}
+\end{frame}
+
+\begin{frame}[fragile]
    \frametitle{Rule Engine}
    \begin{itemize}
       \item Compact engine to detect which rules need to be executed (by priority)
@@ -305,7 +314,6 @@ LINEAR ITERATE OVER uncolored MATCHING TO reg 0
          \item Predicates Count: compact bitmap to keep count of predicates
          \item Dropped Bitmap: rules that no longer are satisfied with the current database after a rule application
          \item Predicates Bitmap: bitmap of predicates/facts derived during a rule application.
-
       \end{itemize}
       \item How to update Rule Queue?
       \begin{itemize}
@@ -318,6 +326,11 @@ LINEAR ITERATE OVER uncolored MATCHING TO reg 0
          \item \texttt{rule\_queue = rule\_queue \& (rule\_queue - 1)}
       \end{itemize}
    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+   \frametitle{Overview}
+   \includegraphics[height=7.5cm]{overview4.pdf}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -391,29 +404,13 @@ LINEAR ITERATE OVER uncolored MATCHING TO reg 0
    \begin{columns}[t]
       \column{.5\textwidth}
       \begin{figure}[b]
-         \includegraphics[width=\textwidth]{../speedup_greedy-graph-coloring-search_engines.pdf}
-         \caption{Greedy Graph Coloring for a webpage graph.}
-      \end{figure}
-      \column{.5\textwidth}
-      \begin{figure}[b]
-         \includegraphics[width=\textwidth]{../speedup_greedy-graph-coloring-2000.pdf}
-         \caption{Greedy Graph Coloring for a random graph.}
-      \end{figure}
-   \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]
-   \frametitle{Experimental Results: Scalability}
-   \begin{columns}[t]
-      \column{.5\textwidth}
-      \begin{figure}[b]
          \includegraphics[width=\textwidth]{../speedup_pagerank-search_engines.pdf}
          \caption{PageRank for a webpage graph.}
       \end{figure}
       \column{.5\textwidth}
       \begin{figure}[b]
-         \includegraphics[width=\textwidth]{../speedup_pagerank-5000.pdf}
-         \caption{PageRank for a random graph.}
+         \includegraphics[width=\textwidth]{../speedup_greedy-graph-coloring-2000.pdf}
+         \caption{Greedy Graph Coloring for a random graph.}
       \end{figure}
    \end{columns}
 \end{frame}
@@ -439,9 +436,8 @@ LINEAR ITERATE OVER uncolored MATCHING TO reg 0
    \begin{figure}[b]
       \begin{tabular}{ | l | l | l | l |}
        \hline
-
        Size & C & Python & YAP Prolog \\ \hline\hline
-       10 & 16.92 & \textbf{0,62} & 5,42 \\
+       10 & 16.92 & \textbf{0.62} & 5,42 \\
        11 & 21.59 & \textbf{0.64} & 6.47 \\
        12 & 10.32 & \textbf{0.73} & 7.61 \\
        13 & 14.35 & \textbf{0.88} & 10.38 \\
@@ -454,7 +450,7 @@ LINEAR ITERATE OVER uncolored MATCHING TO reg 0
         \hline
 
         Size & C & Python & GraphLab \\ \hline\hline
-        10 & \textbf{0.67} & \textbf{0,03} & \textbf{1.00} \\
+        10 & \textbf{0.67} & \textbf{0.03} & \textbf{1.00} \\
         50 & \textit{1.77} & \textbf{0.04} & \textit{1.73} \\
         200 & \textit{1.99} & \textbf{0.05} & \textit{1.79} \\
         400 & \textit{2.00} & \textbf{0.04} & \textit{1.80} \\
@@ -462,6 +458,18 @@ LINEAR ITERATE OVER uncolored MATCHING TO reg 0
         \end{tabular}
         \caption{Belief Propagation program.}
     \end{figure}
+\end{frame}
+
+\begin{frame}
+   \frametitle{Conclusions}
+   \begin{itemize}
+      \item Logic programs are succinct and easier to prove correct
+      \item LM language is general enough to be ported to many distributed architectures
+      \item The virtual machine aims to bridge the gap between logic programming and multicore technology
+      \begin{itemize}
+         \item Aim to execute practical programs
+      \end{itemize}
+   \end{itemize}
 \end{frame}
 
 
